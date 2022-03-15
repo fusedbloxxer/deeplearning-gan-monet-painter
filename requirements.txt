@@ -1,0 +1,19 @@
+# Utilities
+ipykernel
+kaggle
+matplotlib
+autopep8
+pillow
+pandas
+numpy
+scipy
+urllib3
+scikit-image
+
+# PyTorch
+--find-links https://download.pytorch.org/whl/cu113/torch_stable.html
+torch==1.11.0+cu113
+torchaudio==0.11.0+cu113
+torchvision==0.12.0+cu113
+torch_tb_profiler
+tensorboard
