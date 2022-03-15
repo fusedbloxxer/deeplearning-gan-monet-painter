@@ -29,7 +29,9 @@ def download_dataset(data_dir: str):
     # Extract data
     with zipfile.ZipFile(os.path.join(data_dir, f'{dataset}.zip'), 'r') as zip_file:
         zip_file.extractall(os.path.join(data_dir, 'temp'))
-        os.remove(os.path.join(data_dir, f'{dataset}.zip'))
+
+    # Remove temporary zip
+    os.remove(os.path.join(data_dir, f'{dataset}.zip'))
 
     # Move contents to train
     train_temp_dir = os.path.join(data_dir, 'temp', 'monet_jpg')
