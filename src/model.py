@@ -122,5 +122,4 @@ class Discriminator(nn.Module):
         ))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.network(x)
-        return out
+        return self.network(x)
