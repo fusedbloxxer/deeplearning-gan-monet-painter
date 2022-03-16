@@ -11,15 +11,15 @@ import os
 
 
 class MonetDataset(Dataset):
-    def __init__(self, train: bool, data_dir: str, transforms: Compose = None):
+    def __init__(self, monet: bool, data_dir: str, transforms: Compose = None):
         super().__init__()
-        self.__train = train
+        self.__monet = monet
         self.__data_dir = data_dir
-        dataset_type = 'train' if train else 'test'
+        dataset_type = 'monet' if monet else 'photo'
         self.__dataset_dir = os.path.join(data_dir, dataset_type)
         self.__img_paths = [os.path.join(self.__dataset_dir, img_name)
                             for img_name in os.listdir(self.__dataset_dir)]
-        self.__transforms = transforms
+        self.transforms = transforms
 
     def __len__(self) -> int:
         return len(self.__img_paths)
@@ -30,8 +30,8 @@ class MonetDataset(Dataset):
         tensor_img = read_image(img_path, torchvision.io.ImageReadMode.RGB)
 
         # Apply custom transforms
-        if self.__transforms:
-            tensor_img = self.__transforms(tensor_img)
+        if self.transforms:
+            tensor_img = self.transforms(tensor_img)
 
         # Return the transformed img
         return tensor_img
@@ -40,7 +40,7 @@ class MonetDataset(Dataset):
 def download_dataset(data_dir: str):
     # Skip if dataset is already present
     if os.path.exists(data_dir):
-        print('dataset already exists')
+        print(f'Dataset already exists at {data_dir}')
         return
 
     # Setup filesystem
@@ -55,9 +55,9 @@ def download_dataset(data_dir: str):
         quiet=False
     )
 
-    # Make new test-train dirs
-    os.mkdir(os.path.join(data_dir, 'train'))
-    os.mkdir(os.path.join(data_dir, 'test'))
+    # Make new data dirs
+    os.mkdir(os.path.join(data_dir, 'monet'))
+    os.mkdir(os.path.join(data_dir, 'photo'))
 
     # Extract data
     with zipfile.ZipFile(os.path.join(data_dir, f'{dataset}.zip'), 'r') as zip_file:
@@ -66,20 +66,20 @@ def download_dataset(data_dir: str):
     # Remove temporary zip
     os.remove(os.path.join(data_dir, f'{dataset}.zip'))
 
-    # Move contents to train
-    train_temp_dir = os.path.join(data_dir, 'temp', 'monet_jpg')
-    for train_img in os.listdir(train_temp_dir):
+    # Move contents to monet dir
+    monet_temp_dir = os.path.join(data_dir, 'temp', 'monet_jpg')
+    for monet_img in os.listdir(monet_temp_dir):
         shutil.move(
-            os.path.join(train_temp_dir, train_img),
-            os.path.join(data_dir, 'train')
+            os.path.join(monet_temp_dir, monet_img),
+            os.path.join(data_dir, 'monet')
         )
 
-    # Move contents to test
-    test_temp_dir = os.path.join(data_dir, 'temp', 'photo_jpg')
-    for test_img in os.listdir(test_temp_dir):
+    # Move contents to photo dir
+    photo_temp_dir = os.path.join(data_dir, 'temp', 'photo_jpg')
+    for photo_img in os.listdir(photo_temp_dir):
         shutil.move(
-            os.path.join(test_temp_dir, test_img),
-            os.path.join(data_dir, 'test')
+            os.path.join(photo_temp_dir, photo_img),
+            os.path.join(data_dir, 'photo')
         )
 
     # Remove old dirs
