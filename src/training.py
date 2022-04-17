@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from torch.utils import data
 from IPython import display
 from stats import GANStats
+from typing import Tuple
 from torch import optim
 from model import GAN
 from torch import nn
@@ -38,7 +39,9 @@ def pretrain(gan: GAN, data_loader: data.DataLoader, optim_D: optim.Optimizer,
 
 def train(num_epochs: int, epoch_size: int, gan: GAN, data_loader: data.DataLoader,
           optims: optim.Optimizer, d_steps: int, device: torch.device,
-          loss_fn: nn.Module, fixed_noise: torch.Tensor, pretraining: int = None):
+          loss_fn: nn.Module, fixed_noise: torch.Tensor,
+          fake_label_noise: float = 0.0, real_label_noise: float = 0.0,
+          pretraining: int = None):
     # Extract the optimizers
     optim_D, optim_G = optims
 
@@ -49,9 +52,13 @@ def train(num_epochs: int, epoch_size: int, gan: GAN, data_loader: data.DataLoad
     it = iter(data_loader)
     N, _, _, _ = next(it).size()
 
-    # Specify label types
+    # Use binary labels
     fake_labels = torch.full((N,), 0.0, device=device)
     real_labels = torch.full((N,), 1.0, device=device)
+
+    # Add label noise
+    fake_labels = fake_labels + fake_label_noise * torch.rand((N,), device=device)
+    real_labels = real_labels - real_label_noise * torch.rand((N,), device=device)
 
     # Pretrain the Discriminator on the real images
     if pretraining:
@@ -66,12 +73,14 @@ def train(num_epochs: int, epoch_size: int, gan: GAN, data_loader: data.DataLoad
 
                 # Compute the output of the Discriminator for real images
                 real_img = next(it).to(device)
+                real_img = real_img # + torch.randn_like(real_img) * 1.0 + 0.5
                 out_real = gan.D(real_img)
                 loss_d_real = loss_fn(out_real, real_labels)
                 loss_d_real.backward()
 
                 # Compute the output of the Discriminator for fake images
                 fake_img = gan.G.generate(torch.Size((N,)))
+                fake_img = fake_img # + torch.randn_like(fake_img) * 1.0 + 0.5
                 out_fake = gan.D(fake_img.detach())
                 loss_d_fake = loss_fn(out_fake, fake_labels)
                 loss_d_fake.backward()
@@ -90,6 +99,7 @@ def train(num_epochs: int, epoch_size: int, gan: GAN, data_loader: data.DataLoad
 
             # Compute the output of the Discriminator for fake images
             fake_img = gan.G.generate(torch.Size((N,)))
+            fake_img = fake_img # + torch.randn_like(fake_img) * 1.0 + 0.5
             out_fake = gan.D(fake_img)
             loss_g_fake = loss_fn(out_fake, real_labels)
 
@@ -106,4 +116,5 @@ def train(num_epochs: int, epoch_size: int, gan: GAN, data_loader: data.DataLoad
         stats.step()
 
         # Display the current stats
-        display_stats(stats, gan, epoch, fixed_noise)
+        if epoch % 3 == 0:
+            display_stats(stats, gan, epoch, fixed_noise)

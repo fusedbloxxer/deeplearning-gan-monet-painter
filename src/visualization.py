@@ -86,7 +86,7 @@ def display_grad_history(grads: Dict[str, List[float]], title: str):
         plt.subplot(1, count, i + 1)
         plt.plot(np.arange(len(grads)), grads)
         plt.title(name)
-        plt.xlabel('Epoch')
+        plt.xlabel('Iteration')
     plt.show()
 
 
@@ -153,15 +153,15 @@ def display_stats(stats: GANStats, gan: GAN, epoch: int, fixed_noise: torch.Tens
     axis[3].imshow(grid_randn.cpu())
     plt.show()
 
-    # Plot the weight values for each layer
-    display_weights(gan.D, title='Discriminator Weights')
-    display_weights(gan.G, title='Generator Weights')
+    # # Plot the weight values for each layer
+    # display_weights(gan.D, title='Discriminator Weights')
+    # display_weights(gan.G, title='Generator Weights')
 
-    # Display the Gradient flow evolution graph
-    grads_d, grads_g = stats.get_grad()
-    display_grad_history(grads_d, 'Discriminator Gradient Evolution')
-    display_grad_history(grads_g, 'Generator Gradient Evolution')
+    # # Display the Gradient flow evolution graph
+    # grads_d, grads_g = stats.get_grad()
+    # display_grad_history(grads_d, 'Discriminator Gradient Evolution')
+    # display_grad_history(grads_g, 'Generator Gradient Evolution')
 
-    # Plot the current gradient histogram
-    display_grad_hist(gan.D, title='Discriminator Gradient Histogram')
-    display_grad_hist(gan.G, title='Generator Gradient Histogram')
+    # # Plot the current gradient histogram
+    # display_grad_hist(gan.D, title='Discriminator Gradient Histogram')
+    # display_grad_hist(gan.G, title='Generator Gradient Histogram')
