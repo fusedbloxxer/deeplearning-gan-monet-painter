@@ -9,6 +9,7 @@ from torch import nn
 import numpy as np
 import torch
 
+
 def pretrain(gan: GAN, data_loader: data.DataLoader, optim_D: optim.Optimizer,
              device: torch.device, loss_fn: nn.Module, steps: int):
     # Pre-training the Discriminator
@@ -63,52 +64,42 @@ def train(num_epochs: int, epoch_size: int, gan: GAN, data_loader: data.DataLoad
                 # Reset gradients
                 optim_D.zero_grad()
 
-                # ^^^ Classify real images ^^^
-                # Send data to GPU
-                real_img = next(it).to(device)
-
                 # Compute the output of the Discriminator for real images
+                real_img = next(it).to(device)
                 out_real = gan.D(real_img)
                 loss_d_real = loss_fn(out_real, real_labels)
-
-                # Accumulate gradients
                 loss_d_real.backward()
 
-                # ^^^ Classify fake images ^^^
-                fake_img = gan.G.generate(torch.Size((N,)))
-
                 # Compute the output of the Discriminator for fake images
+                fake_img = gan.G.generate(torch.Size((N,)))
                 out_fake = gan.D(fake_img.detach())
                 loss_d_fake = loss_fn(out_fake, fake_labels)
-
-                # Update the model
                 loss_d_fake.backward()
-                optim_D.step()
 
-                # Retain the error
+                # Update the model and retain the error
+                stats.add_grad(net_d=gan.D)
+                optim_D.step()
                 loss_d = loss_d_real + loss_d_fake
 
                 # Save the stats
-                stats.add_loss(loss_d)
+                stats.add_loss(loss_d.detach())
                 stats.add_prob(out_real.detach(), out_fake.detach())
 
-            # --- Train the Generator ---
             # Reset gradients
             optim_G.zero_grad()
 
-            # ^^^ Classify fake images ^^^
-            fake_img = gan.G.generate(torch.Size((N,)))
-
             # Compute the output of the Discriminator for fake images
+            fake_img = gan.G.generate(torch.Size((N,)))
             out_fake = gan.D(fake_img)
             loss_g_fake = loss_fn(out_fake, real_labels)
 
             # Update the model
             loss_g_fake.backward()
+            stats.add_grad(net_g=gan.G)
             optim_G.step()
 
             # Save the stats
-            stats.add_loss(loss_g=loss_g_fake)
+            stats.add_loss(loss_g=loss_g_fake.detach())
             stats.add_prob(prob_fake2=out_fake.detach())
 
         # Save the current stats

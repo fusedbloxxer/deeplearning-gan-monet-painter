@@ -1,5 +1,6 @@
 from torchvision.utils import make_grid
 import matplotlib.pyplot as plt
+from typing import Dict, List
 from torch.utils import data
 from IPython import display
 from stats import GANStats
@@ -19,6 +20,7 @@ def get_grid_samples(dataset, n_samples=25, shuffle=False, padding: int = 5, nor
     grid = make_grid(batch, nrow=nrows, padding=padding, normalize=normalize)
     grid = grid.permute((1, 2, 0))
     return grid
+
 
 def get_grid_fakes(gan: GAN, noise: torch.Tensor = None,
               n_samples: torch.Size = torch.Size((25,)),
@@ -55,7 +57,7 @@ def get_grid_fakes(gan: GAN, noise: torch.Tensor = None,
     return grid
 
 
-def plot_weights(net: nn.Module):
+def display_weights(net: nn.Module, title: str):
     named_params = net.named_parameters()
     np_param_names = []
     np_params = []
@@ -65,10 +67,44 @@ def plot_weights(net: nn.Module):
         np_param_names.append(name)
 
     fig = plt.figure(figsize=(40, 2.5))
+    fig.suptitle(title, fontsize=32, y=1.20)
     count = len(np_param_names)
 
     for i in range(count):
-        plt.subplot(1, count, i+1)
+        plt.subplot(1, count, i + 1)
+        plt.hist(np_params[i], bins=25)
+        plt.title(np_param_names[i])
+    plt.show()
+
+
+def display_grad_history(grads: Dict[str, List[float]], title: str):
+    fig = plt.figure(figsize=(40, 2.5))
+    fig.suptitle(title, fontsize=32, y=1.20)
+    count = len(grads)
+
+    for i, (name, grads) in enumerate(grads.items()):
+        plt.subplot(1, count, i + 1)
+        plt.plot(np.arange(len(grads)), grads)
+        plt.title(name)
+        plt.xlabel('Epoch')
+    plt.show()
+
+
+def display_grad_hist(net: nn.Module, title: str):
+    named_params = net.named_parameters()
+    np_param_names = []
+    np_params = []
+
+    for name, param in named_params:
+        np_params.append(param.grad.clone().detach().view(-1).cpu().numpy())
+        np_param_names.append(name)
+
+    fig = plt.figure(figsize=(40, 2.5))
+    fig.suptitle(title, fontsize=32, y=1.20)
+    count = len(np_param_names)
+
+    for i in range(count):
+        plt.subplot(1, count, i + 1)
         plt.hist(np_params[i], bins=25)
         plt.title(np_param_names[i])
     plt.show()
@@ -117,5 +153,15 @@ def display_stats(stats: GANStats, gan: GAN, epoch: int, fixed_noise: torch.Tens
     axis[3].imshow(grid_randn.cpu())
     plt.show()
 
-    plot_weights(gan.D)
-    plot_weights(gan.G)
+    # Plot the weight values for each layer
+    display_weights(gan.D, title='Discriminator Weights')
+    display_weights(gan.G, title='Generator Weights')
+
+    # Display the Gradient flow evolution graph
+    grads_d, grads_g = stats.get_grad()
+    display_grad_history(grads_d, 'Discriminator Gradient Evolution')
+    display_grad_history(grads_g, 'Generator Gradient Evolution')
+
+    # Plot the current gradient histogram
+    display_grad_hist(gan.D, title='Discriminator Gradient Histogram')
+    display_grad_hist(gan.G, title='Generator Gradient Histogram')

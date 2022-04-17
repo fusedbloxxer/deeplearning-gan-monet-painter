@@ -1,5 +1,7 @@
+from typing import List, Tuple, Dict
 from abc import abstractmethod, ABC
-from typing import List, Tuple
+from model import GAN
+from torch import nn
 import torch
 import copy
 
@@ -12,6 +14,10 @@ class GANBatchStats():
         # Losses
         self.__loss_d = []
         self.__loss_g = []
+
+        # Gradients
+        self.__grad_d: Dict[str, List[torch.Tensor]] = {}
+        self.__grad_g: Dict[str, List[torch.Tensor]] = {}
 
         # Discriminator predictions
         self.__prob_real = []
@@ -36,6 +42,26 @@ class GANBatchStats():
 
         if prob_fake2 is not None:
             self.__prob_fake2.append(prob_fake2.mean().item())
+
+    def add_grad(self, net_d: nn.Module = None, net_g: nn.Module = None) -> None:
+        if net_d is not None:
+            for i, (param_name, param_value) in enumerate(net_d.named_parameters()):
+                if param_value.grad is None:
+                    break
+                history = self.__grad_d.get(param_name, [])
+                history.append(param_value.grad.norm().cpu().item())
+                self.__grad_d[param_name] = history
+
+        if net_g is not None:
+            for i, (param_name, param_value) in enumerate(net_g.named_parameters()):
+                if param_value.grad is None:
+                    break
+                history = self.__grad_g.get(param_name, [])
+                history.append(param_value.grad.norm().cpu().item())
+                self.__grad_g[param_name] = history
+
+    def get_grad(self) -> Tuple[Dict[str, List[float]], Dict[str, List[float]]]:
+        return self.__grad_d, self.__grad_g
 
     def get_loss(self) -> Tuple[float, float]:
         return torch.tensor(self.__loss_d).mean().item(), \
@@ -78,6 +104,12 @@ class GANStats():
                        prob_fake1: torch.Tensor = None,
                        prob_fake2: torch.Tensor = None) -> None:
         self.__batch_metrics.add_prob(prob_real, prob_fake1, prob_fake2)
+
+    def add_grad(self, net_d: nn.Module = None, net_g: nn.Module = None) -> None:
+        self.__batch_metrics.add_grad(net_d=net_d, net_g=net_g)
+
+    def get_grad(self) -> Tuple[Dict[str, List[float]], Dict[str, List[float]]]:
+        return self.__batch_metrics.get_grad()
 
     def get_loss(self) -> Tuple[torch.Tensor, torch.Tensor]:
         if len(self.__epoch_metrics) == 0:

@@ -11,6 +11,7 @@ class Model(nn.Module):
     def device(self) -> torch.device:
         return next(self.parameters()).device
 
+
 class Generator(Model):
     def __init__(self, in_dim: torch.Size, hidden_dim: torch.Size,
                  out_dim: torch.Size, activ_fun: nn.Module,
@@ -56,6 +57,9 @@ class Generator(Model):
         noise = noise.to(self.device).squeeze(-1)
         return self(noise)
 
+    # def generate(self, n_samples: torch.Size = torch.Size((16,))) -> torch.Tensor:
+    #     return torch.randn((16, 3, 256, 256)).to(self.device)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.in_fc(x)
         out = out.view((-1, *self.hidden_dim[:]))
@@ -70,6 +74,10 @@ class Generator(Model):
         out = self.out_fun(out)
         out = out.view((-1, *self.out_dim[:]))
         return out
+
+    # def forward(self, x: torch.Tensor) -> torch.Tensor:
+    #     return torch.randn((16, 3, 256, 256)).to(self.device)
+
 
 class Discriminator(Model):
     def __init__(self, in_dim: torch.Size, hidden_dim: torch.Size,
