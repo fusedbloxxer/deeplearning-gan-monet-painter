@@ -100,7 +100,7 @@ class Generator(Model):
 
         # Initialize optional parameters
         if distrib is None:
-            distrib = distr.Uniform(torch.tensor([0.0]), torch.tensor([1.0]))
+            distrib = distr.Uniform(torch.tensor([-1.0]), torch.tensor([1.0]))
 
         # Initialize members
         self.distrib = distrib
@@ -144,12 +144,6 @@ class Generator(Model):
         out = out.view((-1, *self.out_dim[:]))
         return out
 
-    # def generate(self, n_samples: torch.Size = torch.Size((16,))) -> torch.Tensor:
-    #     return torch.randn((16, 3, 256, 256)).to(self.device)
-
-    # def forward(self, x: torch.Tensor) -> torch.Tensor:
-    #     return torch.randn((16, 3, 256, 256)).to(self.device)
-
 
 class Discriminator(Model):
     def __init__(self, in_dim: torch.Size, hidden_dim: torch.Size,
@@ -180,10 +174,10 @@ class Discriminator(Model):
         self.bn5 = nn.BatchNorm2d(hidden_dim[0] * 16)
         self.pool1 = nn.AdaptiveAvgPool2d((4, 4))
 
-        self.fc1 = nn.Linear(hidden_dim[0] * 32 * 4 * 4, hidden_dim[0] * 32, bias=bias)
-        self.fc2 = nn.Linear(hidden_dim[0] * 32, out_dim[0], bias=bias)
+        self.fc1 = nn.Linear(hidden_dim[0] * 32 * 4 * 4, hidden_dim[0] * 256, bias=bias)
+        self.fc2 = nn.Linear(hidden_dim[0] * 256, out_dim[0], bias=bias)
 
-        self.bn6 = nn.BatchNorm1d(hidden_dim[0] * 32)
+        self.bn6 = nn.BatchNorm1d(hidden_dim[0] * 256)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.activ_fun(self.bn1(self.conv1(x)))
