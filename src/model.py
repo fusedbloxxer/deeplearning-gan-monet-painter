@@ -116,6 +116,7 @@ class Generator(Model):
 
         # Layers
         self.fc1 = nn.Linear(in_dim.numel(), hidden_dim.numel(), bias=bias)
+        self.bn1 = nn.BatchNorm1d(hidden_dim.numel())
         self.gen1 = GenerativeBlock(hidden_dim[0]     ,  4, activ_fun, bias, batchnorm)
         self.gen2 = GenerativeBlock(hidden_dim[0] // 2,  4, activ_fun, bias, batchnorm)
         self.gen3 = GenerativeBlock(hidden_dim[0] // 4,  4, activ_fun, bias, batchnorm)
@@ -131,7 +132,7 @@ class Generator(Model):
         return self(noise)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.fc1(x)
+        out = self.activ_fun(self.bn1(self.fc1(x)))
         out = out.view((-1, *self.hidden_dim[:]))
         out = self.gen1(out)
         out = self.gen2(out)
@@ -157,7 +158,6 @@ class Discriminator(Model):
 
         # Activation function
         self.activ_fun = activ_fun
-        self.out_fun = nn.Sigmoid()
 
         # Layers
         self.conv1 = nn.Conv2d(in_dim[0], hidden_dim[0], 3, 2, 1, bias=bias)
@@ -193,7 +193,6 @@ class Discriminator(Model):
         out = self.activ_fun(self.bn6(self.fc1(out)))
         out = self.fc2(out)
 
-        out = self.out_fun(out)
         out = out.view((-1,))
         return out
 
@@ -203,6 +202,18 @@ class GAN(Model):
         super(GAN, self).__init__()
         self.G = generator
         self.D = discriminator
+
+    def gradient_penalty(self, real_images: torch.Tensor, fake_images: torch.Tensor) -> torch.Tensor:
+        N, _, _, _ = real_images.size()
+        alpha = torch.rand((N,)).view(N, 1, 1, 1).to(self.device)
+        diff = fake_images - real_images
+        interp = real_images + alpha * diff
+        preds = self.D(interp)
+        grads = torch.autograd.grad(preds, interp, torch.ones_like(preds), create_graph=True)
+        grads = grads[0].view(grads[0].size(0), -1)
+        grads_norm = grads.norm(2, dim=1)
+        grads_penalty = ((grads_norm - 1) ** 2).mean()
+        return grads_penalty
 
     def classify(self, x: torch.Tensor) -> torch.Tensor:
         return self.D(x)
