@@ -116,12 +116,12 @@ class Generator(Model):
 
         # Layers
         self.fc1 = nn.Linear(in_dim.numel(), hidden_dim.numel(), bias=bias)
-        self.gen1 = GenerativeBlock(hidden_dim[0]     ,  10, activ_fun, bias, batchnorm)
-        self.gen2 = GenerativeBlock(hidden_dim[0] // 2,  10, activ_fun, bias, batchnorm)
-        self.gen3 = GenerativeBlock(hidden_dim[0] // 4,  10, activ_fun, bias, batchnorm)
-        self.gen4 = GenerativeBlock(hidden_dim[0] // 8,  10, activ_fun, bias, batchnorm)
-        self.gen5 = GenerativeBlock(hidden_dim[0] // 16, 10, activ_fun, bias, batchnorm)
-        self.gen6 = GenerativeBlock(hidden_dim[0] // 32, 10, activ_fun, bias, batchnorm)
+        self.gen1 = GenerativeBlock(hidden_dim[0]     ,  4, activ_fun, bias, batchnorm)
+        self.gen2 = GenerativeBlock(hidden_dim[0] // 2,  4, activ_fun, bias, batchnorm)
+        self.gen3 = GenerativeBlock(hidden_dim[0] // 4,  4, activ_fun, bias, batchnorm)
+        self.gen4 = GenerativeBlock(hidden_dim[0] // 8,  4, activ_fun, bias, batchnorm)
+        self.gen5 = GenerativeBlock(hidden_dim[0] // 16, 4, activ_fun, bias, batchnorm)
+        self.gen6 = GenerativeBlock(hidden_dim[0] // 32, 4, activ_fun, bias, batchnorm)
         self.conv = nn.Conv2d(hidden_dim[0] // 64, out_dim[0], 3, 1, 1, bias=bias)
 
     def generate(self, n_samples: torch.Size = torch.Size((16,))) -> torch.Tensor:
@@ -174,10 +174,10 @@ class Discriminator(Model):
         self.bn5 = nn.BatchNorm2d(hidden_dim[0] * 16)
         self.pool1 = nn.AdaptiveAvgPool2d((4, 4))
 
-        self.fc1 = nn.Linear(hidden_dim[0] * 32 * 4 * 4, hidden_dim[0] * 256, bias=bias)
-        self.fc2 = nn.Linear(hidden_dim[0] * 256, out_dim[0], bias=bias)
+        self.fc1 = nn.Linear(hidden_dim[0] * 32 * 4 * 4, hidden_dim[0] * 128, bias=bias)
+        self.fc2 = nn.Linear(hidden_dim[0] * 128, out_dim[0], bias=bias)
 
-        self.bn6 = nn.BatchNorm1d(hidden_dim[0] * 256)
+        self.bn6 = nn.BatchNorm1d(hidden_dim[0] * 128)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.activ_fun(self.bn1(self.conv1(x)))
